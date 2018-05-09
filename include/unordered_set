@@ -303,7 +303,11 @@ template <class Value, class Hash, class Pred, class Alloc>
 
 #include <__config>
 #include <__hash_table>
+#include <vector>
 #include <functional>
+#include <stdio.h>
+#include <algorithm>
+#include <random>
 
 #if !defined(_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER)
 #pragma GCC system_header
@@ -330,13 +334,59 @@ private:
 
     __table __table_;
 
+
+    class __randomized_iterator : std::iterator<std::forward_iterator_tag, value_type> {
+        public:
+            _randomized_iterator(){ end=true; }
+            _randomized_iterator(__table __table_){
+                _curr_index = 0;
+                _table_size = 0;
+                end = false;
+                for (v : __table_){
+                    _values.push_back(v);
+                    _table_size += 1;
+                }
+                srand(unsigned(time(NULL)));
+                std::random_shuffle(_values.begin(), _values.end());
+            }
+            _randomized_iterator & operator++(){
+                _curr_index += 1;
+                if (_curr_index>=_table_size){
+                    end=true;
+                }
+                return *this;
+            }
+            value_type operator*(){
+                return _values[_curr_index];
+            }
+            bool operator!=(const _randomized_iterator &other){
+                if (end && other.end){
+                    return false;
+                }
+                if ((_curr_index != other._curr_index) || (_table_size != other._table_size)){
+                    return true;
+                }
+                for(int i=0; i < _values.size(); i++){
+                    if (vector[i]!=other.vector[i]){
+                        return true;
+                    }
+                }
+                return false;
+            }
+        private:
+            vector<value_type> _values;
+            int _curr_index;
+            int _table_size;
+            bool end;
+    }
+
 public:
     typedef typename __table::pointer         pointer;
     typedef typename __table::const_pointer   const_pointer;
     typedef typename __table::size_type       size_type;
     typedef typename __table::difference_type difference_type;
 
-    typedef typename __table::const_iterator       iterator;
+    typedef typename __randomized_iterator       iterator;
     typedef typename __table::const_iterator       const_iterator;
     typedef typename __table::const_local_iterator local_iterator;
     typedef typename __table::const_local_iterator const_local_iterator;
@@ -403,9 +453,9 @@ public:
     size_type max_size() const _NOEXCEPT {return __table_.max_size();}
 
     _LIBCPP_INLINE_VISIBILITY
-    iterator       begin() _NOEXCEPT        {return __table_.begin();}
+    iterator       begin() _NOEXCEPT        {return __table_._randomized_iterator(__table_);}
     _LIBCPP_INLINE_VISIBILITY
-    iterator       end() _NOEXCEPT          {return __table_.end();}
+    iterator       end() _NOEXCEPT          {return __table_._randomized_iterator();}
     _LIBCPP_INLINE_VISIBILITY
     const_iterator begin()  const _NOEXCEPT {return __table_.begin();}
     _LIBCPP_INLINE_VISIBILITY
